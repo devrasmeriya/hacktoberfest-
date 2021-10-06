@@ -1,5 +1,34 @@
 package main
 
+func GetTimeEndpoint(response http.ResponseWriter, request *http.Request) {
+	response.Header().Set("content-type", "application/json")
+	var meetings []Meeting
+	params := mux.Vars(request)
+	starttime, _ := (params["starttime"])
+	endtime, _ := (params["endtime"])
+	collection := client.Database("thepolyglotdeveloper").Collection("people")
+	ctx, _ := context.WithTimeout(context.Background(), 30*time.Second)
+	cursor, err := collection.Find(ctx, bson.M{"starttime": starttime, "endtime": endtime})
+	if err != nil {
+		response.WriteHeader(http.StatusInternalServerError)
+		response.Write([]byte(`{ "message": "` + err.Error() + `" }`))
+		return
+	}
+	defer cursor.Close(ctx)
+	for cursor.Next(ctx) {
+		var meeting Meeting
+		cursor.Decode(&meeting)
+		meetings = append(meetings, meeting)
+	}
+	if err := cursor.Err(); err != nil {
+		response.WriteHeader(http.StatusInternalServerError)
+		response.Write([]byte(`{ "message": "` + err.Error() + `" }`))
+		return
+	}
+	json.NewEncoder(response).Encode(meetings)
+}
+
+
 import (
 	"context"
 	"encoding/json"
@@ -66,6 +95,34 @@ func GetMeetingEndpoint(response http.ResponseWriter, request *http.Request) {
 	ctx, _ := context.WithTimeout(context.Background(), 30*time.Second)
 	err := collection.FindOne(ctx, Meeting{ID: id}).Decode(&meetings)
 	if err != nil {
+		response.WriteHeader(http.StatusInternalServerError)
+		response.Write([]byte(`{ "message": "` + err.Error() + `" }`))
+		return
+	}
+	json.NewEncoder(response).Encode(meetings)
+}
+
+func GetTimeEndpoint(response http.ResponseWriter, request *http.Request) {
+	response.Header().Set("content-type", "application/json")
+	var meetings []Meeting
+	params := mux.Vars(request)
+	starttime, _ := (params["starttime"])
+	endtime, _ := (params["endtime"])
+	collection := client.Database("thepolyglotdeveloper").Collection("people")
+	ctx, _ := context.WithTimeout(context.Background(), 30*time.Second)
+	cursor, err := collection.Find(ctx, bson.M{"starttime": starttime, "endtime": endtime})
+	if err != nil {
+		response.WriteHeader(http.StatusInternalServerError)
+		response.Write([]byte(`{ "message": "` + err.Error() + `" }`))
+		return
+	}
+	defer cursor.Close(ctx)
+	for cursor.Next(ctx) {
+		var meeting Meeting
+		cursor.Decode(&meeting)
+		meetings = append(meetings, meeting)
+	}
+	if err := cursor.Err(); err != nil {
 		response.WriteHeader(http.StatusInternalServerError)
 		response.Write([]byte(`{ "message": "` + err.Error() + `" }`))
 		return
